@@ -43,6 +43,7 @@ public:
 		,buffer_(nullptr)
 		,row0_(0)
 	{}
+
 	TMap<T>(int width, int height, int stride = 0)
 		:cols_(width < 0 ? 0 : width)
 		,rows_(height < 0 ? 0 : height)
@@ -51,6 +52,7 @@ public:
 		,buffer_(new T[capacity_])
 		,row0_(buffer_.get())
 	{}
+
 	TMap<T>(int width, int height, T* data, int stride = 0, bool copy = false)
 		:cols_(width)
 		,rows_(height)
@@ -76,6 +78,25 @@ public:
 		b.rows_ = height;
 		b.row0_ = b.ptr(y, x);
 		return b;
+	}
+
+	void copyTo(TMap<T>& other) const
+	{
+		other.create(cols_, rows_);
+
+		int h = rows_;
+		int w = cols_;
+		if (w == stride_ && w == other.stride_)
+		{
+			w *= h;
+			h = 1;
+		}
+
+		for (int y = 0; y < h; ++y)
+		{
+			const T* p = ptr(y);
+			std::copy(p, p + w, other.ptr(y));
+		}
 	}
 
 	void setTo(const T& value)
@@ -113,61 +134,43 @@ public:
 		*this = TMap<T>(width, height);
 	}
 
-	void copyTo(TMap<T>& other) const
-	{
-		other.create(cols_, rows_);
-
-		int h = rows_;
-		int w = cols_ ;
-		if (w == stride_ && w == other.stride_)
-		{
-			w *= h;
-			h = 1;
-		}
-
-		for (int y = 0; y < h; ++y)
-		{
-			const T* p = ptr(y);
-			std::copy(p, p + w, other.ptr(y));
-		}
-	}
 	TMap<T> clone(void) const
 	{
 		TMap<T> b;
 		copyTo(b);
 		return b;
 	}
-
-
+	
 	T* ptr(int y = 0, int x = 0)
 	{
-		return row0_ + stride_ * y + x;
+		return row0_ + (stride_ * y + x);
 	}
 
 	const T* ptr(int y = 0, int x = 0) const
 	{
-		return row0_ + stride_ * y + x;
+		return row0_ + (stride_ * y + x);
 	}
 
 	bool isOverlapping(const TMap<T>& other) const
 	{
 		if (row0_ < other.row0_)
-			return is_overlap(*this, other);
+			return isOverlapping(*this, other);
 		else if (row0_ > other.row0_)
-			return is_overlap(other, *this);
+			return isOverlapping(other, *this);
 		else
 			return row0_ != nullptr;
 	}
 private:
-	static bool is_overlap(const TMap<T>& lo, const TMap<T>& hi)
+	static bool isOverlapping(const TMap<T>& lo, const TMap<T>& hi)
 	{
+		if (hi.row0_ < lo.row0_)
+			return isOverlapping(hi, lo);
 		if (lo.ptr(lo.rows_ - 1, lo.cols_ - 1) < hi.row0_)
 			return false;
 		int x = (hi.row0_ - lo.row0_) % lo.stride_;
 		return (x < lo.cols_ || x + hi.cols_ > lo.stride_);
 	}
-
-
+	
 	int cols_;
 	int rows_;
 	int stride_;
