@@ -1,4 +1,5 @@
 /*
+
 BSD 3-Clause License
 
 Copyright (c) 2018, Shaun Prickett
@@ -28,7 +29,9 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 */
+
 #pragma once
 #include <memory>
 
@@ -56,6 +59,7 @@ public:
 		:width_(width)
 		, height_(height)
 		, stride_(stride ? stride : width)
+		, capacity_(0)
 		, buffer_(nullptr)
 		, row0_(data)
 	{
@@ -137,7 +141,7 @@ public:
 
 	const T* ptr(int y = 0, int x = 0) const
 	{
-		return row0_ + stride_ * y * x;
+		return row0_ + stride_ * y + x;
 	}
 
 	bool isOverlapping(const TMap<T>& other) const
