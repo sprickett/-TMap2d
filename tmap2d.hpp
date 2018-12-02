@@ -30,11 +30,164 @@
 
 #pragma once
 #include <memory>
+#include <stdexcept>
+
+class NotImplemented : public std::logic_error
+{
+public:
+	NotImplemented() : std::logic_error("Function not yet implemented") { };
+};
+
+
+template<typename T>
+class HopIterator
+{
+	T* ptr_;
+	T* begin_;
+	T* end_;
+	ptrdiff_t stride_;
+public:
+	typedef ptrdiff_t difference_type;
+	typedef T value_type; 
+	typedef T* pointer; 
+	typedef T& reference;
+	typedef std::bidirectional_iterator_tag iterator_category;		
+
+	explicit HopIterator(T* data, size_t width, ptrdiff_t stride)
+		:ptr_(data)
+		,begin_(ptr_)
+		,end_(begin_ + width)
+		,stride_(stride)
+	{}
+
+	T& operator* () { return *ptr_; }
+
+	
+	HopIterator<T>& operator++ ()
+	{
+		if (++ptr_ >= end_)
+		{
+			end_ += stride_;
+			begin_ += stride_;
+			ptr_ = begin_;
+		}
+		return *this;
+	}
+	HopIterator<T>& operator-- ()
+	{
+		if (--ptr_ < begin_)
+		{
+			end_ -= stride_;
+			begin_ -= stride_;
+			ptr_ = end_ - 1;
+		}
+		return *this;
+	}
+
+
+
+	HopIterator<T> operator++ (int)
+	{
+		HopIterator<T> i = *this;
+		++*this; 
+		return i;
+	}
+	HopIterator<T> operator-- (int)
+	{
+		HopIterator<T> i = *this; 
+		--*this;
+		return i;
+	}
+
+	bool operator== (const HopIterator<T>& other) const
+	{
+		return ptr_ == other.ptr_;
+	}
+	bool operator!= (const HopIterator<T>& other) const
+	{
+		return ptr_ != other.ptr_;
+	}
+
+	// random access
+	//HopIterator<T>& operator+=(difference_type x)
+	//{		
+	//	ptr_ += x;
+	//	if (p < end_)
+	//	{
+	//		ptr_ = p;
+	//	}
+	//	else
+	//	{
+	//		x -= end_ - ptr_;
+	//		
+	//	}
+	//	return *this;
+	//}
+
+	//HopIterator<T>& operator-=(difference_type x)
+	//{
+	//	*this += -x;
+	//	return *this;
+	//}
+
+	//HopIterator<T> operator+(difference_type x)
+	//{
+	//	HopIterator<T> i = *this;
+	//	i += x;
+	//	return i;
+	//}
+	//static HopIterator<T> operator+(difference_type x , HopIterator<T> i)
+	//{		
+	//	return i += x;
+	//}
+	//HopIterator<T> operator-(difference_type x)
+	//{
+	//	return *this + -x;
+	//}
+
+	//HopIterator<T> operator-(const HopIterator<T>& i)
+	//{
+	//	NotImplemented();
+	//	return *this;
+	//}
+
+	//HopIterator<T> operator[](difference_type x)
+	//{
+	//	NotImplemented();
+	//	return *this;
+	//}
+
+	//bool operator<(const HopIterator<T>& i) const
+	//{
+	//	NotImplemented();
+	//	return false;
+	//}
+	//bool operator>(const HopIterator<T>& i) const
+	//{
+	//	NotImplemented();
+	//	return false;
+	//}
+	//bool operator<=(const HopIterator<T>& i) const
+	//{
+	//	NotImplemented();
+	//	return false;
+	//}
+	//bool operator>=(const HopIterator<T>& i) const
+	//{
+	//	NotImplemented();
+	//	return false;
+	//}
+};
+
+//template<typename T>
+//std::iterator_traits< HopIterator<T> >
+
 
 template<typename T>
 class TMap
 {
 public:
+	typedef T pixel_type;
 	TMap<T>(void)
 		:cols_(0)
 		,rows_(0)
@@ -65,8 +218,8 @@ public:
 			*this = clone();
 	}
 
-	int cols(void)const { return cols_; }
-	int rows(void)const { return rows_; }
+	int width(void)const { return cols_; }
+	int height(void)const { return rows_; }
 	int stride(void)const { return stride_; }
 	
 	bool const isContinuous(void) const { return stride_ == cols_; }
@@ -160,6 +313,18 @@ public:
 		else
 			return row0_ != nullptr;
 	}
+	
+	typedef HopIterator<T> iterator;
+	
+	iterator begin(void)
+	{
+		return HopIterator<T>(row0_, cols_, stride_);
+	}
+	iterator end(void)
+	{
+		return HopIterator<T>(row0_ + stride_*rows_, cols_, stride_);
+	}
+
 private:
 	static bool isOverlapping(const TMap<T>& lo, const TMap<T>& hi)
 	{
@@ -178,3 +343,13 @@ private:
 	std::shared_ptr<T[]> buffer_;
 	T* row0_;
 };
+
+//template <class T>
+//struct iterator_traits<T*> {
+//	typedef T value_type;
+//};
+//difference_type 	Iterator::difference_type
+//value_type 	Iterator::value_type
+//pointer 	Iterator::pointer
+//reference 	Iterator::reference
+//iterator_category 	Iterator::iterator_category
